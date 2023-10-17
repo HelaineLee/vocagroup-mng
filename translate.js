@@ -9,31 +9,46 @@ const translate = new Translate(
     }
 );
 
-/**
- * TODO(developer): Uncomment the following lines before running the sample.
- */
-const text = 'translate';    // The text to translate, e.g. Hello, world!
-const target = 'ru';  // The target language, e.g. ru
-const model = 'base';   // The model to use, e.g. nmt
+// DB connection
+const db = require('./db.js');
+const select = require('./query/select.js');
+const update = require('./query/update.js');
 
-async function translateTextWithModel() {
-    const options = {
-        // The target language, e.g. "ru"
-        to: target,
-        // Make sure your project is on the allow list.
-        // Possible values are "base" and "nmt"
-        model: model,
-    };
+const part = 'noun'
+const start_lang = 'en';
+const target_lang = 'ru';  // The target language, e.g. ru
+const model = 'base';   // The model to use, possible values are "base" and "nmt"
 
-    // Translates the text into the target language. "text" can be a string for
-    // translating a single piece of text, or an array of strings for translating
-    // multiple texts.
-    let [translations] = await translate.translate(text, options);
-    translations = Array.isArray(translations) ? translations : [translations];
-    console.log('Translations:');
-    translations.forEach((translation, i) => {
-        console.log(`${text[i]} => (${target}) ${translation}`);
-    });
-}
+db.query(select(part, start_lang, target_lang)
+    , function(error, results, fields){
+        results.forEach(r => {
+            const text = r.text;    // The text to translate, e.g. Hello, world!
 
-translateTextWithModel();
+            async function translateTextWithModel() {
+                const options = {
+                    to: target_lang,                    
+                    model: model,
+                };
+            
+                // Translates the text into the target language. "text" can be a string for
+                // translating a single piece of text, or an array of strings for translating
+                // multiple texts.
+                let [translations] = await translate.translate(text, options);
+                translations = Array.isArray(translations) ? translations : [translations];
+                translations.forEach((translation, i) => {
+                    console.log(`${text} => (${target_lang}) ${translation}`);
+                    db.query(update(part, target_lang, translation, r.no)
+                        , function(error, result){
+                            if(error){
+                                throw error;
+                            }
+                        }
+                    );
+
+                });
+            }
+            
+            translateTextWithModel();
+        });
+    }
+);

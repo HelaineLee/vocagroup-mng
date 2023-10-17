@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@google-cloud/translate": "^8.0.2"
+    "@google-cloud/translate": "^8.0.2",
+    "mysql": "^2.18.1"
   }
 }
